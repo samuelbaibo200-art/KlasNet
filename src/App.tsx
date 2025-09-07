@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import LoginForm from './components/Auth/LoginForm';
+import auth from './utils/auth';
 import { db } from './utils/database';
 import { Eleve, Classe, Enseignant, Matiere, Paiement } from './types';
 import { Search } from 'lucide-react';
@@ -25,6 +27,39 @@ import { seedDefaults } from './utils/seedDefaults';
 
 
 function App() {
+  // État d'authentification
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Vérifier l'authentification au démarrage
+  useEffect(() => {
+    const user = auth.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = (user: any) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+  };
+
+  // Si pas authentifié, afficher le formulaire de connexion
+  if (!isAuthenticated) {
+    return (
+      <ToastProvider>
+        <LoginForm onLogin={handleLogin} />
+      </ToastProvider>
+    );
+  }
+
   // Gérer la navigation via CustomEvent (pour Dashboard)
   // Hooks d'état principaux (déclarés une seule fois)
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -40,16 +75,7 @@ function App() {
   const [selectedEnseignant, setSelectedEnseignant] = useState<Enseignant | null>(null);
   const [showEnseignantForm, setShowEnseignantForm] = useState(false);
   // Utilisateur courant (admin par défaut)
-  const [currentUser] = useState({
-    id: '1',
-    nom: 'Caissière',
-    prenoms: '',
-    email: '',
-    role: '',
-    actif: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
+  // currentUser est maintenant géré par l'authentification
 
   useEffect(() => {
     const listener = (e: Event) => {
@@ -398,6 +424,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 relative">
         <Header
           currentUser={currentUser}
+          onLogout={handleLogout}
           onNavigate={handleNavigate}
           currentPage={currentPage}
           onShowGuide={() => setShowGuide(true)}

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Search, DollarSign, FileText, AlertTriangle } from 'lucide-react';
 import { db } from '../../utils/database';
 import { Eleve, Paiement, FraisScolaire, Classe } from '../../types';
 import EnteteFiche from '../EnteteFiche';
@@ -8,6 +9,7 @@ import { openPrintPreviewFromElementId } from '../../utils/printPreview';
 import { getCurrentUser } from '../../utils/auth';
 
 export default function FinancesList() {
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [showPaymentModal, setShowPaymentModal] = React.useState(false);
   const [formMontant, setFormMontant] = React.useState('');
@@ -167,14 +169,47 @@ export default function FinancesList() {
     <div>
       {/* force-read refreshKey to avoid unused variable lint */}
       <span className="hidden">{refreshKey}</span>
-    <div className="mt-2 flex items-center justify-between">
-        <div>
-      <button className="px-3 py-1 bg-teal-600 text-white rounded" onClick={() => {
+      
+      {/* En-tête moderne pour caissière */}
+      <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white p-6 rounded-t-xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">💰 Gestion Financière</h1>
+            <p className="text-teal-100">Interface caissière - Paiements et reçus</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-teal-100">Total élèves</div>
+            <div className="text-2xl font-bold">{filteredEleves.length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Barre d'actions principale */}
+      <div className="bg-white border-x border-gray-200 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <button 
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shadow-sm transition-all"
+              onClick={() => setShowPaymentModal(true)}
+            >
+              <DollarSign className="h-4 w-4" />
+              <span>Nouveau Paiement</span>
+            </button>
+            
+            <button 
+              className="flex items-center space-x-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-sm transition-all" 
+              onClick={() => {
             setSelectedPaiementsIds([]);
             setShowRecuPicker(true);
-          }}>Aperçu reçus</button>
-      <button className="ml-3 px-3 py-1 bg-green-600 text-white rounded" onClick={() => setShowPaymentModal(true)}>Nouveau paiement</button>
-          <button className="ml-3 bg-yellow-600 text-white px-4 py-2 rounded" onClick={async () => {
+              }}
+            >
+              <FileText className="h-4 w-4" />
+              <span>Aperçu Reçus</span>
+            </button>
+            
+            <button 
+              className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 shadow-sm transition-all" 
+              onClick={async () => {
             // Imprimer convocations: collect unpaid échéances for all élèves filtrés
             try {
               const containerId = `convocations-print-${Date.now()}`;
@@ -231,36 +266,231 @@ export default function FinancesList() {
               showToast('Erreur lors de la génération des convocations', 'error');
               console.error(err);
             }
-          }}>Imprimer convocations</button>
+              }}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <span>Convocations</span>
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'grid' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                }`}
+              >
+                Cartes
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                }`}
+              >
+                Tableau
+              </button>
+            </div>
+          </div>
         </div>
-        <h2 className="text-xl font-bold mb-4">Gestion des Finances</h2>
       </div>
-      <div className="flex space-x-4 mb-4">
-        <select value={selectedClasse} onChange={e => setSelectedClasse(e.target.value)} className="border rounded px-2 py-1">
-          <option value="">Toutes les classes</option>
-          {classes.map(c => (
-            <option key={c.id} value={c.id}>{c.niveau} {c.section}</option>
-          ))}
-        </select>
-        <input type="text" placeholder="Recherche élève..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="border rounded px-2 py-1" />
+
+      {/* Filtres améliorés */}
+      <div className="bg-white border-x border-gray-200 p-4 border-t">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-64">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Rechercher un élève (nom, prénom, matricule)..." 
+                value={searchTerm} 
+                onChange={e => setSearchTerm(e.target.value)} 
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
+          <select 
+            value={selectedClasse} 
+            onChange={e => setSelectedClasse(e.target.value)} 
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+          >
+            <option value="">📚 Toutes les classes</option>
+            {classes.map(c => (
+              <option key={c.id} value={c.id}>{c.niveau} {c.section}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="bg-white border border-gray-200 rounded-b-xl">
+        {viewMode === 'grid' ? (
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEleves.map((eleve) => {
+                const totalPaye = getTotalPaye(eleve.id);
+                const inscription = getInscriptionValue(eleve);
+                const statutInscription = (eleve as any).statutInscription || 'non-inscrit';
+                
+                return (
+                  <div 
+                    key={eleve.id} 
+                    className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all cursor-pointer"
+                    onClick={() => setElevePaiement(eleve.id)}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        {eleve.photo ? (
+                          <img src={eleve.photo} alt="" className="h-12 w-12 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-12 w-12 bg-gradient-to-br from-teal-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {eleve.prenoms.charAt(0)}{eleve.nom.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{eleve.prenoms} {eleve.nom}</h3>
+                          <p className="text-sm text-gray-500">{eleve.matricule}</p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        statutInscription === 'inscrit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {statutInscription === 'inscrit' ? '✅ Inscrit' : '❌ Non inscrit'}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Inscription</span>
+                        <span className="font-semibold text-teal-600">{inscription.toLocaleString()} FCFA</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-5 gap-2 text-center">
+                        {[1,2,3,4,5].map(v => {
+                          const montant = getSommeVersementIndex(eleve.id, v);
+                          return (
+                            <div key={v} className="bg-gray-50 rounded-lg p-2">
+                              <div className="text-xs text-gray-500">V{v}</div>
+                              <div className="text-sm font-medium">{montant.toLocaleString()}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <div className="pt-3 border-t border-gray-100">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-700">Total payé</span>
+                          <span className="text-lg font-bold text-green-600">{totalPaye.toLocaleString()} FCFA</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Élève</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Statut</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Inscription</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">V1</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">V2</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">V3</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">V4</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">V5</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredEleves.map((eleve, idx) => {
+                  const totalPaye = getTotalPaye(eleve.id);
+                  const inscription = getInscriptionValue(eleve);
+                  const statutInscription = (eleve as any).statutInscription || 'non-inscrit';
+                  
+                  return (
+                    <tr 
+                      key={eleve.id} 
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => setElevePaiement(eleve.id)}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center space-x-3">
+                          {eleve.photo ? (
+                            <img src={eleve.photo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 bg-gradient-to-br from-teal-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                              {eleve.prenoms.charAt(0)}{eleve.nom.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium text-gray-900">{eleve.prenoms} {eleve.nom}</div>
+                            <div className="text-sm text-gray-500">{eleve.matricule}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          statutInscription === 'inscrit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {statutInscription === 'inscrit' ? 'Inscrit' : 'Non inscrit'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center font-medium">{inscription.toLocaleString()} FCFA</td>
+                      <td className="px-4 py-3 text-center">{getSommeVersementIndex(eleve.id, 1).toLocaleString()} FCFA</td>
+                      <td className="px-4 py-3 text-center">{getSommeVersementIndex(eleve.id, 2).toLocaleString()} FCFA</td>
+                      <td className="px-4 py-3 text-center">{getSommeVersementIndex(eleve.id, 3).toLocaleString()} FCFA</td>
+                      <td className="px-4 py-3 text-center">{getSommeVersementIndex(eleve.id, 4).toLocaleString()} FCFA</td>
+                      <td className="px-4 py-3 text-center">{getSommeVersementIndex(eleve.id, 5).toLocaleString()} FCFA</td>
+                      <td className="px-4 py-3 text-center font-bold text-green-600">{totalPaye.toLocaleString()} FCFA</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Gestion financière par élève : ouvert en cliquant sur le nom */}
       {/* Modal d'édition financière */}
       {elevePaiement && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Gestion financière - { (eleves.find(e => e.id === elevePaiement) as any)?.nom }</h3>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">💰 Gestion Financière</h3>
+                <p className="text-gray-600">{ (eleves.find(e => e.id === elevePaiement) as any)?.prenoms } { (eleves.find(e => e.id === elevePaiement) as any)?.nom }</p>
+              </div>
               <div className="flex items-center gap-2">
-                <button className="text-sm px-2 py-1 bg-gray-100 rounded" onClick={() => cleanupZeroPayments(elevePaiement!)}>Nettoyer 0 FCFA</button>
-                <button className="text-gray-500" onClick={() => setElevePaiement(null)}>✕</button>
+                <button 
+                  className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" 
+                  onClick={() => cleanupZeroPayments(elevePaiement!)}
+                >
+                  🧹 Nettoyer
+                </button>
+                <button 
+                  className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+                  onClick={() => setElevePaiement(null)}
+                >
+                  ✕
+                </button>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm">Statut</label>
-                <select value={ ((eleves.find(e => e.id === elevePaiement) as any)?.statutInscription) || 'non-inscrit' } onChange={(e) => {
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">📋 Statut d'inscription</h4>
+                  <select 
+                    value={ ((eleves.find(e => e.id === elevePaiement) as any)?.statutInscription) || 'non-inscrit' } 
+                    onChange={(e) => {
                   const newStatus = e.target.value;
                   const ele = eleves.find(x => x.id === elevePaiement);
                   if (!ele) return;
@@ -294,24 +524,45 @@ export default function FinancesList() {
                   // feedback
                   showToast('Statut mis à jour', 'success');
                   setRefreshKey(k => k + 1);
-                }} className="border rounded px-2 py-1 w-full">
+                    }} 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white"
+                  >
                   <option value="non-inscrit">Non-inscrit</option>
                   <option value="inscrit">Inscrit</option>
                 </select>
+                </div>
               </div>
+              
               <div>
-                <label className="block text-sm">Enregistrer un versement</label>
-                <div className="mt-2 flex gap-2">
-                  <input placeholder="Montant" type="number" value={formMontant} onChange={e => setFormMontant(e.target.value)} className="border px-2 py-1 rounded w-1/2" />
-                  <select value={formType} onChange={e => setFormType(e.target.value)} className="border px-2 py-1 rounded w-1/2">
+                <div className="bg-blue-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">💳 Nouveau versement</h4>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input 
+                        placeholder="Montant (FCFA)" 
+                        type="number" 
+                        value={formMontant} 
+                        onChange={e => setFormMontant(e.target.value)} 
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <select 
+                        value={formType} 
+                        onChange={e => setFormType(e.target.value)} 
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      >
                     <option value="scolarite">Scolarité (V)</option>
                     <option value="inscription">Inscription</option>
                     <option value="cantine">Cantine</option>
                   </select>
-                </div>
-                <div className="mt-2 flex gap-2 items-center">
-                  <div className="text-sm">Modalité:</div>
-                  <select value={selectedModalite} onChange={e => setSelectedModalite(e.target.value === 'auto' ? 'auto' : Number(e.target.value))} className="border px-2 py-1 rounded w-40">
+                    </div>
+                    
+                    <div className="flex gap-2 items-center">
+                      <span className="text-sm font-medium text-gray-700">Modalité:</span>
+                      <select 
+                        value={selectedModalite} 
+                        onChange={e => setSelectedModalite(e.target.value === 'auto' ? 'auto' : Number(e.target.value))} 
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      >
                     <option value="auto">Auto</option>
                     <option value={1}>1 - V1</option>
                     <option value={2}>2 - V2</option>
@@ -321,9 +572,11 @@ export default function FinancesList() {
                     <option value={6}>6 - V6</option>
                     <option value={7}>7 - V7</option>
                   </select>
-                </div>
-                <div className="mt-2 flex gap-2">
-                  <button className="px-3 py-1 bg-teal-600 text-white rounded" onClick={() => {
+                    </div>
+                    
+                    <button 
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors" 
+                      onClick={() => {
                     const montant = Number(formMontant || 0);
                     const type = formType || 'scolarite';
                     if (!montant || !elevePaiement) { showToast('Montant invalide', 'error'); return; }
@@ -368,13 +621,20 @@ export default function FinancesList() {
                     setFormMontant('');
                     setFormType('scolarite');
                     setRefreshKey(k => k + 1);
-                  }}>Enregistrer</button>
+                      }}
+                    >
+                      💾 Enregistrer le versement
+                    </button>
+                  </div>
                 </div>
               </div>
+              
               <div>
-                <label className="block text-sm">Imprimer reçus</label>
-                  <div className="mt-2">
-                    <button className="px-3 py-1 bg-teal-600 text-white rounded" onClick={async () => {
+                <div className="bg-green-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">🖨️ Impression</h4>
+                  <button 
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors" 
+                    onClick={async () => {
                       // Render RecuPaiement components into a temporary container for faithful preview
                       if (!elevePaiement) return;
                       const paiementsEleve = paiements.filter(p => p.eleveId === elevePaiement);
@@ -411,33 +671,45 @@ export default function FinancesList() {
                         openPrintPreviewFromElementId(containerId, `Reçus ${elevePaiement}`);
                         setTimeout(() => { const d = document.getElementById(containerId); if (d) d.remove(); }, 2000);
                       }, 150);
-                    }}>Aperçu reçus</button>
-                  </div>
+                    }}
+                  >
+                    📄 Aperçu des reçus
+                  </button>
+                </div>
               </div>
             </div>
+            
             <div className="mt-4">
-              <h4 className="font-semibold">Historique des paiements</h4>
-              <div className="max-h-48 overflow-auto mt-2">
-                <table className="w-full text-sm">
+              <div className="bg-white rounded-xl border border-gray-200">
+                <div className="px-4 py-3 bg-gray-50 rounded-t-xl border-b border-gray-200">
+                  <h4 className="font-semibold text-gray-900">📊 Historique des paiements</h4>
+                </div>
+                <div className="max-h-48 overflow-auto">
+                  <table className="w-full text-sm">
                   <thead>
-                    <tr>
-                      <th className="border px-2 py-1">Date</th>
-                      <th className="border px-2 py-1">Montant</th>
-                      <th className="border px-2 py-1">Type</th>
-                      <th className="border px-2 py-1">Reçu</th>
+                      <tr className="bg-gray-50">
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Date</th>
+                        <th className="px-3 py-2 text-right font-medium text-gray-700">Montant</th>
+                        <th className="px-3 py-2 text-center font-medium text-gray-700">Type</th>
+                        <th className="px-3 py-2 text-center font-medium text-gray-700">Reçu</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paiements.filter(p => p.eleveId === elevePaiement).map(p => (
-                      <tr key={(p as any).id}>
-                        <td className="border px-2 py-1">{new Date((p as any).datePaiement || (p as any).date || '').toLocaleDateString('fr-FR')}</td>
-                        <td className="border px-2 py-1">{(p as any).montant} FCFA</td>
-                        <td className="border px-2 py-1">{(p as any).typeFrais}</td>
-                        <td className="border px-2 py-1">{(p as any).numeroRecu || '-'}</td>
+                        <tr key={(p as any).id} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 border-b border-gray-100">{new Date((p as any).datePaiement || (p as any).date || '').toLocaleDateString('fr-FR')}</td>
+                          <td className="px-3 py-2 border-b border-gray-100 text-right font-medium">{(p as any).montant.toLocaleString()} FCFA</td>
+                          <td className="px-3 py-2 border-b border-gray-100 text-center">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                              {(p as any).typeFrais}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 border-b border-gray-100 text-center font-mono text-xs">{(p as any).numeroRecu || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
 

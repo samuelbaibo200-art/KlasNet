@@ -1,5 +1,5 @@
 import React from 'react';
-import { School, User } from 'lucide-react';
+import { School, User, LogOut } from 'lucide-react';
 interface UserType {
   prenoms: string;
   nom: string;
@@ -8,11 +8,12 @@ interface UserType {
 
 interface HeaderProps {
   currentUser: UserType;
+  onLogout: () => void;
   onNavigate: (page: string) => void;
   currentPage: string;
 }
 
-export default function Header({ currentUser, onNavigate, currentPage, onShowGuide }: HeaderProps & { onShowGuide?: () => void }) {
+export default function Header({ currentUser, onLogout, onNavigate, currentPage, onShowGuide }: HeaderProps & { onShowGuide?: () => void }) {
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de Bord', icon: 'dashboard' },
     { id: 'eleves', label: 'Élèves', icon: 'users' },
@@ -72,6 +73,13 @@ export default function Header({ currentUser, onNavigate, currentPage, onShowGui
                 {currentUser?.role}
               </span>
             </div>
+            <button
+              onClick={onLogout}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Déconnexion"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
