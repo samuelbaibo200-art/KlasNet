@@ -939,40 +939,10 @@ export default function FinancesList() {
         </table>
       </div>
 
-      <table className="min-w-full border">
-        <thead>
-          <tr>
-            <th className="border px-2 py-1">N°</th>
-            <th className="border px-2 py-1">Matricule</th>
-            <th className="border px-2 py-1">Nom</th>
-            <th className="border px-2 py-1">Statut</th>
-            <th className="border px-2 py-1">Inscription</th>
-            <th className="border px-2 py-1">V1</th>
-            <th className="border px-2 py-1">V2</th>
-            <th className="border px-2 py-1">V3</th>
-            <th className="border px-2 py-1">V4</th>
-            <th className="border px-2 py-1">V5</th>
-            <th className="border px-2 py-1">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEleves.map((eleve, idx) => (
-            <tr key={eleve.id}>
-              <td className="border px-2 py-1">{idx + 1}</td>
-              <td className="border px-2 py-1">{eleve.matricule}</td>
-              <td className="border px-2 py-1 cursor-pointer text-blue-600" onClick={() => setElevePaiement(eleve.id)}>{eleve.nom} {eleve.prenoms}</td>
-              <td className="border px-2 py-1">{(eleve as any).statutInscription || 'non-inscrit'}</td>
-              <td className="border px-2 py-1">{getInscriptionValue(eleve)} FCFA</td>
-              <td className="border px-2 py-1">{getSommeVersementIndex(eleve.id, 1)} FCFA</td>
-              <td className="border px-2 py-1">{getSommeVersementIndex(eleve.id, 2)} FCFA</td>
-              <td className="border px-2 py-1">{getSommeVersementIndex(eleve.id, 3)} FCFA</td>
-              <td className="border px-2 py-1">{getSommeVersementIndex(eleve.id, 4)} FCFA</td>
-              <td className="border px-2 py-1">{getSommeVersementIndex(eleve.id, 5)} FCFA</td>
-              <td className="border px-2 py-1">{getTotalPaye(eleve.id)} FCFA</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    {/* Le tableau principal est rendu dans le bloc conditionnel plus haut
+      (viewMode === 'grid' ? cartes : tableau). Cette table dupliquée
+      à la fin provoquait l'affichage permanent du tableau; elle a été
+      supprimée pour respecter le choix de l'utilisateur. */}
     </div>
   );
 }

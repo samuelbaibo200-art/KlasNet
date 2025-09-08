@@ -43,6 +43,7 @@ const RecuPaiement: React.FC<RecuPaiementProps> = ({
 }) => {
   const cfg = getEnteteConfig('recu');
   const printRef = useRef<HTMLDivElement | null>(null);
+  const refundNote = "Aucun remboursement n'est possible après encaissement.";
 
   const handlePdfPreview = () => {
   const id = `recu-print-area-${numeroRecu}`;
@@ -52,28 +53,10 @@ const RecuPaiement: React.FC<RecuPaiementProps> = ({
   };
   return (
     <div ref={printRef} className={`${printMode ? '' : 'bg-white p-8 rounded-xl shadow-xl max-w-lg mx-auto border border-gray-300 print:max-w-full print:shadow-none print:border-0 font-sans'}`}>
-  {printMode ? (
+      {printMode ? (
         <div id="print-area" className="print:block">
+          {/* EnteteFiche already renders logos/libelle/footer for print */}
           <EnteteFiche type="recu" libelle="REÇU DE PAIEMENT" />
-          <div className="mb-2" />
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              {(cfg.logo || logoUrl) ? (
-                <img src={cfg.logo || logoUrl} alt="Logo" className="h-16 w-16 object-contain" />
-              ) : (
-                <div className="h-16 w-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-600">Logo</div>
-              )}
-              <div className="text-xs text-gray-700 font-semibold leading-tight">
-                <div>École Primaire Privée Baptiste Missionnaire</div>
-                <div>Koumassi Centre</div>
-                <div className="text-[11px] text-gray-500">Année scolaire : <span className="font-bold">{anneeScolaire}</span></div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-600 text-right">
-              <div className="font-bold">N° Reçu : <span className="text-black">{numeroRecu}</span></div>
-              <div>Date : {formatDate(date)}</div>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="flex items-center justify-between mb-2">
@@ -84,8 +67,7 @@ const RecuPaiement: React.FC<RecuPaiementProps> = ({
               <div className="h-16 w-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-600">Logo</div>
             )}
             <div className="text-xs text-gray-700 font-semibold leading-tight">
-              <div>École Primaire Privée Baptiste Missionnaire</div>
-              <div>Koumassi Centre</div>
+              <div>GROUPE SCOLAIRE BAPTISTE MISSIONNAIRE DE KOUMASSI CENTRE</div>
               <div className="text-[11px] text-gray-500">Année scolaire : <span className="font-bold">{anneeScolaire}</span></div>
             </div>
           </div>
@@ -128,7 +110,9 @@ const RecuPaiement: React.FC<RecuPaiementProps> = ({
         </tbody>
       </table>
       <div className="text-xs text-gray-500 mt-2 border-t pt-2 text-center">
-        <div className="mb-1">Aucun remboursement n'est possible après encaissement.</div>
+        {(!cfg.footer || !cfg.footer.includes(refundNote)) && (
+          <div className="mb-1">{refundNote}</div>
+        )}
         <div className="italic">Imprimé le {formatDate(new Date().toISOString())}</div>
       </div>
     </div>

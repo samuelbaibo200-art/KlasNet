@@ -51,14 +51,6 @@ function App() {
     setIsAuthenticated(false);
   };
 
-  // Si pas authentifié, afficher le formulaire de connexion
-  if (!isAuthenticated) {
-    return (
-      <ToastProvider>
-        <LoginForm onLogin={handleLogin} />
-      </ToastProvider>
-    );
-  }
 
   // Gérer la navigation via CustomEvent (pour Dashboard)
   // Hooks d'état principaux (déclarés une seule fois)
@@ -429,38 +421,44 @@ function App() {
           currentPage={currentPage}
           onShowGuide={() => setShowGuide(true)}
         />
-        {/* Barre de recherche rapide globale */}
-        <div className="flex justify-center mt-2 mb-2">
-          <div className="relative w-full max-w-xl">
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              placeholder="Recherche rapide (élève, classe, enseignant, matière, paiement...)"
-              value={searchTerm}
-              onChange={e => {
-                setSearchTerm(e.target.value);
-                setShowSearchDropdown(true);
-              }}
-              onFocus={() => setShowSearchDropdown(true)}
-              onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
-            />
-            <Search className="absolute right-3 top-2.5 text-gray-400" />
-            {showSearchDropdown && searchResults.length > 0 && (
-              <div className="absolute z-50 w-full bg-white border rounded-lg shadow-lg mt-1 max-h-64 overflow-y-auto">
-                {searchResults.map((item, idx) => (
-                  <button
-                    key={item.type + '-' + item.id + '-' + idx}
-                    className="w-full text-left px-4 py-2 hover:bg-teal-50 border-b last:border-b-0 text-sm"
-                    onMouseDown={() => handleSearchSelect(item)}
-                  >
-                    <span className="font-semibold text-teal-700">[{item.type}]</span> {item.label}
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Si pas authentifié, afficher le formulaire de connexion */}
+        {!isAuthenticated ? (
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <LoginForm onLogin={handleLogin} />
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-center mt-2 mb-2">
+            <div className="relative w-full max-w-xl">
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                placeholder="Recherche rapide (élève, classe, enseignant, matière, paiement...)"
+                value={searchTerm}
+                onChange={e => {
+                  setSearchTerm(e.target.value);
+                  setShowSearchDropdown(true);
+                }}
+                onFocus={() => setShowSearchDropdown(true)}
+                onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
+              />
+              <Search className="absolute right-3 top-2.5 text-gray-400" />
+              {showSearchDropdown && searchResults.length > 0 && (
+                <div className="absolute z-50 w-full bg-white border rounded-lg shadow-lg mt-1 max-h-64 overflow-y-auto">
+                  {searchResults.map((item, idx) => (
+                    <button
+                      key={item.type + '-' + item.id + '-' + idx}
+                      className="w-full text-left px-4 py-2 hover:bg-teal-50 border-b last:border-b-0 text-sm"
+                      onMouseDown={() => handleSearchSelect(item)}
+                    >
+                      <span className="font-semibold text-teal-700">[{item.type}]</span> {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <main>
           {loading && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">

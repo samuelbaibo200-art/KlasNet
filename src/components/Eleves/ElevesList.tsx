@@ -55,14 +55,35 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
     const file = e.target.files?.[0];
     if (!file) return;
     setImportFile(file);
-    const { importerElevesDepuisExcel } = await import('../../utils/excelImportExport');
+    // Si le fichier est .xls (BIFF) : SheetJS peut souvent le lire, mais certains fichiers très anciens ou corrompus
+    // peuvent poser problème — demander confirmation avant de continuer.
+    if (file.name.toLowerCase().endsWith('.xls')) {
+      const ok = window.confirm("Le fichier sélectionné est au format .xls (ancien). Voulez-vous tenter l'import (peut échouer sur des fichiers BIFF très anciens) ?");
+      if (!ok) return;
+    }
+
     try {
-      const res: any = await importerElevesDepuisExcel(file);
-      setImportColumns(res.columns);
-      setImportPreview(res.preview);
-      setShowMappingModal(true);
+      const mod = await import('../../utils/excelImportExport');
+      const importer = mod.importerElevesDepuisExcel;
+      if (typeof importer !== 'function') throw new Error('Module d\'import introuvable');
+      const res: any = await importer(file);
+      if (!res) throw new Error('Aucune donnée retournée par l\'importeur');
+      if (Array.isArray(res)) {
+        // importeur a retourné directement la liste d'élèves
+        setImportPreview(res);
+        setShowImportModal(true);
+      } else if (res.columns) {
+        setImportColumns(res.columns);
+        setImportPreview(res.preview || []);
+        setShowMappingModal(true);
+      } else {
+        setImportPreview(res.preview || []);
+        setShowImportModal(true);
+      }
     } catch (err) {
-      alert('Erreur importation : ' + err);
+  const msg = err instanceof Error ? err.message : String(err);
+  alert('Erreur importation : ' + msg + "\n(Vérifiez que le serveur de développement a bien chargé le module de lecture Excel — 'xlsx' / SheetJS.)");
+      console.error('Import error:', err);
     }
   };
 
@@ -117,9 +138,9 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
   // Import/Export Excel
   // (Supprimé la version simple, on garde la version avec aperçu et sélection de classe)
   const handleExportExcel = async () => {
-    const { exporterElevesEnExcel } = await import('../../utils/excelImportExport');
-    const data = exporterElevesEnExcel(eleves);
-    const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const { exporterElevesEnExcel } = await import('../../utils/excelImportExport');
+  const data = await exporterElevesEnExcel(eleves);
+  const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -167,6 +188,7 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
   const printClasseLabel = selectedClasseObj ? `${selectedClasseObj.niveau} ${selectedClasseObj.section || ''}`.trim() : 'Toutes les classes';
   const printAnnee = selectedClasseObj ? selectedClasseObj.anneeScolaire : (classes[0]?.anneeScolaire || '');
   const printLibelle = `${printClasseLabel}${printAnnee ? ' — ' + printAnnee : ''} — ${enteteConfig.header}`;
+  const includeClasseColumnInPrint = !selectedClasseObj; // when printing all classes
 
   const filteredEleves = useMemo(() => {
     let filtered = [...eleves];
@@ -266,7 +288,8 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
           <label className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">
             <Upload className="h-4 w-4" />
             <span>Importer</span>
-            <input type="file" accept=".xlsx" style={{ display: 'none' }} onChange={handleImportExcel} />
+            {/* accept both xlsx and xls but prefer xlsx; .xls will show a warning */}
+            <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
     {/* Modal mapping des colonnes */}
     {showMappingModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -448,13 +471,15 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
               <colgroup>
                 <col style={{ width: '8%' }} />
                 <col style={{ width: '20%' }} />
-                <col style={{ width: '72%' }} />
+                <col style={{ width: includeClasseColumnInPrint ? '60%' : '72%' }} />
+                {includeClasseColumnInPrint && <col style={{ width: '12%' }} />}
               </colgroup>
               <thead>
                 <tr>
                   <th className="border px-2 py-1 text-left text-sm font-medium">N°</th>
                   <th className="border px-2 py-1 text-left text-sm font-medium">Matricule</th>
                   <th className="border px-2 py-1 text-left text-sm font-medium">Noms et Prénoms</th>
+                  {includeClasseColumnInPrint && <th className="border px-2 py-1 text-left text-sm font-medium">Classe</th>}
                 </tr>
               </thead>
             </table>
@@ -464,7 +489,8 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
               <colgroup>
                 <col style={{ width: '8%' }} />
                 <col style={{ width: '20%' }} />
-                <col style={{ width: '72%' }} />
+                <col style={{ width: includeClasseColumnInPrint ? '60%' : '72%' }} />
+                {includeClasseColumnInPrint && <col style={{ width: '12%' }} />}
               </colgroup>
               <tbody>
                 {filteredEleves.map((el, i) => (
@@ -472,6 +498,7 @@ export default function ElevesList({ onEleveSelect, onNewEleve }: ElevesListProp
                     <td className="border px-2 py-1 text-sm">{i + 1}</td>
                     <td className="border px-2 py-1 text-sm">{el.matricule}</td>
                     <td className="border px-2 py-1 text-sm">{`${el.prenoms} ${el.nom}`.trim()}</td>
+                    {includeClasseColumnInPrint && <td className="border px-2 py-1 text-sm">{getClasseNom(el.classeId)}</td>}
                   </tr>
                 ))}
               </tbody>

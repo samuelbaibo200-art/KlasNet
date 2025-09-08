@@ -85,19 +85,21 @@ export default function Dashboard() {
 
     // Calcul des situations financières
     const situationsFinancieres = eleves.map(eleve => {
-      const frais = fraisScolaires.find(f => f.niveau === eleve.classeId);
+      // Trouver la classe de l'élève puis chercher les frais pour son niveau/année
+      const classeObj = classes.find(c => c.id === eleve.classeId);
+      const frais = classeObj ? fraisScolaires.find(f => f.niveau === classeObj.niveau && f.anneeScolaire === classeObj.anneeScolaire) : undefined;
       const totalDu = frais ? 
-        frais.fraisInscription + frais.fraisScolarite + frais.fraisCantine + frais.fraisTransport + frais.fraisFournitures 
+        (frais.fraisInscription || 0) + (frais.fraisScolarite || 0) + (frais.fraisCantine || 0) + (frais.fraisTransport || 0) + (frais.fraisFournitures || 0)
         : 0;
-      
+
       const paiementsEleve = paiements.filter(p => p.eleveId === eleve.id);
       const totalPaye = paiementsEleve.reduce((sum, p) => sum + p.montant, 0);
       const solde = totalDu - totalPaye;
-      
+
       let statut: SituationFinanciere['statut'] = 'Non Payé';
       if (solde <= 0) statut = 'Payé';
       else if (totalPaye > 0) statut = 'Partiellement Payé';
-      
+
       return { eleveId: eleve.id, statut, solde };
     });
 

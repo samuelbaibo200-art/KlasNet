@@ -127,13 +127,43 @@ export default function ConfigBackup() {
 
   // Export/Import/Reset (réutilise les handlers existants)
   const handleExport = () => {
-    const data = db.exportData();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const date = new Date().toISOString().split('T')[0];
-    a.href = url; a.download = `klasnet_backup_${date}.json`; a.click(); window.URL.revokeObjectURL(url);
-    showToast('Sauvegarde exportée avec succès', 'success');
+    // Try to create a structured ZIP with folders/subfolders. If JSZip is not available, fall back to single JSON file.
+    (async () => {
+      try {
+        const JSZipModule = await import('jszip');
+        const JSZip: any = JSZipModule && (JSZipModule.default || JSZipModule);
+        const zip = new JSZip();
+
+        // Build structured folders: /data/<collection>.json and /meta/info.json
+        const data = JSON.parse(db.exportData());
+        const date = new Date().toISOString().split('T')[0];
+
+        // data files
+        const dataFolder = zip.folder(`backup_${date}/data`);
+        Object.entries(data).forEach(([collection, items]) => {
+          dataFolder.file(`${collection}.json`, JSON.stringify(items, null, 2));
+        });
+
+        // meta
+        const metaFolder = zip.folder(`backup_${date}/meta`);
+        metaFolder.file('info.json', JSON.stringify({ generatedAt: new Date().toISOString(), app: 'KlasNet' }, null, 2));
+
+        const content = await zip.generateAsync({ type: 'blob' });
+        const url = window.URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url; a.download = `klasnet_backup_${date}.zip`; a.click(); window.URL.revokeObjectURL(url);
+        showToast('Sauvegarde ZIP exportée avec succès', 'success');
+      } catch (err) {
+        // fallback: single JSON file
+        const data = db.exportData();
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().split('T')[0];
+        a.href = url; a.download = `klasnet_backup_${date}.json`; a.click(); window.URL.revokeObjectURL(url);
+        showToast('Sauvegarde exportée (fallback JSON)', 'success');
+      }
+    })();
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
