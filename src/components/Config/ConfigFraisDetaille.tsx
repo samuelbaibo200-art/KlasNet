@@ -250,7 +250,7 @@ export default function ConfigFraisDetaille() {
                   <select
                     value={formData.niveau}
                     onChange={(e) => setFormData(prev => ({ ...prev, niveau: e.target.value }))}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all"
                   >
                     {NIVEAUX.map(n => (
                       <option key={n} value={n}>{n}</option>
@@ -264,7 +264,7 @@ export default function ConfigFraisDetaille() {
                     type="text"
                     value={formData.anneeScolaire}
                     onChange={(e) => setFormData(prev => ({ ...prev, anneeScolaire: e.target.value }))}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all"
                     placeholder="2025-2026"
                   />
                 </div>
