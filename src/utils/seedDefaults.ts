@@ -1,101 +1,150 @@
-import { db } from './database';
-import { Classe, Enseignant } from '../types';
+import React, { useState, useEffect } from 'react';
+import { useToast } from '../Layout/ToastProvider';
+import { Save, X } from 'lucide-react';
+import { db } from '../../utils/database';
+import { Matiere } from '../../types';
 
-const anneeScolaire = new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-
-const requestedClasses: Omit<Classe, 'id' | 'createdAt' | 'updatedAt'>[] = [
-  { niveau: 'Petite Section', section: 'PS', anneeScolaire, enseignantPrincipal: '', effectifMax: 35, salle: 'PS', matieres: [] },
-  { niveau: 'Moyenne Section', section: 'MS', anneeScolaire, enseignantPrincipal: '', effectifMax: 35, salle: 'MS', matieres: [] },
-  { niveau: 'Grande Section', section: 'GS', anneeScolaire, enseignantPrincipal: '', effectifMax: 35, salle: 'GS', matieres: [] },
-  { niveau: 'CP1', section: 'A', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CP1-A', matieres: [] },
-  { niveau: 'CP1', section: 'B', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CP1-B', matieres: [] },
-  { niveau: 'CP2', section: 'A', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CP2-A', matieres: [] },
-  { niveau: 'CP2', section: 'B', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CP2-B', matieres: [] },
-  { niveau: 'CE1', section: 'A', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CE1-A', matieres: [] },
-  { niveau: 'CE1', section: 'B', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CE1-B', matieres: [] },
-  { niveau: 'CE2', section: 'A', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CE2-A', matieres: [] },
-  { niveau: 'CE2', section: 'B', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CE2-B', matieres: [] },
-  { niveau: 'CM1', section: 'A', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CM1-A', matieres: [] },
-  { niveau: 'CM1', section: 'B', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CM1-B', matieres: [] },
-  { niveau: 'CM2', section: 'A', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CM2-A', matieres: [] },
-  { niveau: 'CM2', section: 'B', anneeScolaire, enseignantPrincipal: '', effectifMax: 40, salle: 'CM2-B', matieres: [] },
-];
-
-export function seedDefaults() {
-  // For each requested class, ensure a placeholder teacher exists and assign
-  requestedClasses.forEach(cl => {
-    const teacherPrenoms = 'ENS';
-    const teacherNom = `${cl.niveau} ${cl.section}`;
-    const teacherDisplay = `${teacherPrenoms} ${teacherNom}`;
-    const enseignants = db.getAll<Enseignant>('enseignants');
-    let enseignant = enseignants.find(e => `${e.prenoms} ${e.nom}` === teacherDisplay);
-    if (!enseignant) {
-      const enseignantPayload: Partial<Enseignant> = {
-        nom: teacherNom,
-        prenoms: teacherPrenoms,
-        sexe: 'F',
-        telephone: '',
-        email: '',
-        adresse: '',
-        specialite: '',
-        diplome: '',
-        dateEmbauche: new Date().toISOString(),
-        statut: 'Actif',
-        classesPrincipales: [],
-        matieresEnseignees: [],
-        salaire: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-  enseignant = db.create<Enseignant>('enseignants', enseignantPayload as Enseignant);
-      
-    }
-
-    const exist = db.getAll<Classe>('classes').find(c => c.niveau === cl.niveau && c.section === cl.section && c.anneeScolaire === cl.anneeScolaire);
-    if (!exist) {
-      const payload: Omit<Classe, 'id' | 'createdAt' | 'updatedAt'> = { ...cl, enseignantPrincipal: `${enseignant.prenoms} ${enseignant.nom}` };
-      db.create<Classe>('classes', payload as any);
-    }
-  });
-
-  console.log('Seed defaults: classes et enseignants créés si manquants');
-
-  // --- Seed frais scolaires pour 2025-2026 (valeurs fournies) ---
-  const anneeTarget = '2025-2026';
-  const defaultFrais: Array<Omit<import('../types').FraisScolaire, 'id' | 'createdAt' | 'updatedAt'>> = [
-    {
-      niveau: 'Petite Section',
-      anneeScolaire: anneeTarget,
-      fraisInscription: 0,
-      echeances: [
-        { id: 'Petite Section-2025-2026-1', date: '2025-09-01', montant: 35000, modalite: 1 },
-        { id: 'Petite Section-2025-2026-2', date: '2025-10-05', montant: 15000, modalite: 2 },
-        { id: 'Petite Section-2025-2026-3', date: '2025-11-05', montant: 10000, modalite: 3 },
-        { id: 'Petite Section-2025-2026-4', date: '2025-12-05', montant: 10000, modalite: 4 },
-        { id: 'Petite Section-2025-2026-5', date: '2026-01-05', montant: 10000, modalite: 5 },
-        { id: 'Petite Section-2025-2026-6', date: '2026-02-05', montant: 10000, modalite: 6 },
-        { id: 'Petite Section-2025-2026-7', date: '2026-03-05', montant: 10000, modalite: 7 }
-      ]
-    },
-  { niveau: 'Moyenne Section', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'Moyenne Section-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'Moyenne Section-2025-2026-2', date: '2025-10-05', montant: 15000, modalite:2 }, { id: 'Moyenne Section-2025-2026-3', date: '2025-11-05', montant: 10000, modalite:3 }, { id: 'Moyenne Section-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'Moyenne Section-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'Moyenne Section-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'Moyenne Section-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'Grande Section', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'Grande Section-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'Grande Section-2025-2026-2', date: '2025-10-05', montant: 15000, modalite:2 }, { id: 'Grande Section-2025-2026-3', date: '2025-11-05', montant: 10000, modalite:3 }, { id: 'Grande Section-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'Grande Section-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'Grande Section-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'Grande Section-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'CP1', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'CP1-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'CP1-2025-2026-2', date: '2025-10-05', montant: 15000, modalite:2 }, { id: 'CP1-2025-2026-3', date: '2025-11-05', montant: 15000, modalite:3 }, { id: 'CP1-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'CP1-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'CP1-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'CP1-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'CP2', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'CP2-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'CP2-2025-2026-2', date: '2025-10-05', montant: 15000, modalite:2 }, { id: 'CP2-2025-2026-3', date: '2025-11-05', montant: 15000, modalite:3 }, { id: 'CP2-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'CP2-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'CP2-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'CP2-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'CE1', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'CE1-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'CE1-2025-2026-2', date: '2025-10-05', montant: 15000, modalite:2 }, { id: 'CE1-2025-2026-3', date: '2025-11-05', montant: 15000, modalite:3 }, { id: 'CE1-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'CE1-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'CE1-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'CE1-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'CE2', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'CE2-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'CE2-2025-2026-2', date: '2025-10-05', montant: 15000, modalite:2 }, { id: 'CE2-2025-2026-3', date: '2025-11-05', montant: 15000, modalite:3 }, { id: 'CE2-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'CE2-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'CE2-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'CE2-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'CM1', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'CM1-2025-2026-1', date: '2025-09-01', montant: 35000, modalite:1 }, { id: 'CM1-2025-2026-2', date: '2025-10-05', montant: 20000, modalite:2 }, { id: 'CM1-2025-2026-3', date: '2025-11-05', montant: 15000, modalite:3 }, { id: 'CM1-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'CM1-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'CM1-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'CM1-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] },
-  { niveau: 'CM2', anneeScolaire: anneeTarget, fraisInscription: 0, echeances: [ { id: 'CM2-2025-2026-1', date: '2025-09-01', montant: 45000, modalite:1 }, { id: 'CM2-2025-2026-2', date: '2025-10-05', montant: 20000, modalite:2 }, { id: 'CM2-2025-2026-3', date: '2025-11-05', montant: 15000, modalite:3 }, { id: 'CM2-2025-2026-4', date: '2025-12-05', montant: 10000, modalite:4 }, { id: 'CM2-2025-2026-5', date: '2026-01-05', montant: 10000, modalite:5 }, { id: 'CM2-2025-2026-6', date: '2026-02-05', montant: 10000, modalite:6 }, { id: 'CM2-2025-2026-7', date: '2026-03-05', montant: 10000, modalite:7 } ] }
-  ];
-
-  defaultFrais.forEach(f => {
-    const exist = db.getAll('fraisScolaires').find((x: any) => x.niveau === f.niveau && x.anneeScolaire === f.anneeScolaire);
-    if (!exist) {
-      const payload: Omit<import('../types').FraisScolaire, 'id' | 'createdAt' | 'updatedAt'> & { createdAt: string; updatedAt: string } = { ...f, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-      db.create<import('../types').FraisScolaire>('fraisScolaires', payload as import('../types').FraisScolaire);
-    }
-  });
-
-  console.log('Seed defaults: frais scolaires pour 2025-2026 ajoutés si manquants');
+interface MatiereFormProps {
+  matiere?: Matiere | null;
+  onSave: (matiere: Matiere) => void;
+  onCancel: () => void;
 }
 
-export default seedDefaults;
+export default function MatiereForm({ matiere, onSave, onCancel }: MatiereFormProps) {
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: '',
+    coefficient: 1,
+    type: 'Fondamentale' as 'Fondamentale' | 'Éveil' | 'Expression',
+    obligatoire: true,
+    classeIds: [] as string[]
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (matiere) {
+      setFormData({
+        nom: matiere.nom,
+        coefficient: matiere.coefficient,
+        type: matiere.type,
+        obligatoire: matiere.obligatoire,
+        classeIds: matiere.classeIds || []
+      });
+    }
+  }, [matiere]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom de la matière est obligatoire';
+    if (formData.coefficient < 1 || formData.coefficient > 10) newErrors.coefficient = 'Le coefficient doit être entre 1 et 10';
+
+    const matieres = db.getAll<Matiere>('matieres');
+    const existingMatiere = matieres.find(m => 
+      m.nom.toLowerCase() === formData.nom.toLowerCase() && 
+      m.id !== matiere?.id
+    );
+    if (existingMatiere) {
+      newErrors.nom = 'Une matière avec ce nom existe déjà';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSaving(true);
+    try {
+      if (matiere) {
+        const updatedMatiere = db.update<Matiere>('matieres', matiere.id, formData);
+        if (updatedMatiere) {
+          showToast('Matière mise à jour avec succès', 'success');
+          onSave(updatedMatiere);
+        }
+      } else {
+        const newMatiere = db.create<Matiere>('matieres', formData);
+        showToast('Matière ajoutée avec succès', 'success');
+        onSave(newMatiere);
+      }
+    } catch {
+      showToast('Erreur lors de la sauvegarde de la matière', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof typeof formData, value: unknown) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        {/* En-tête moderne */}
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
+                <span className="text-3xl">📚</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {matiere ? 'Modifier la matière' : 'Nouvelle matière'}
+                </h1>
+                <p className="text-orange-100 mt-1">
+                  {matiere ? 'Modifiez les informations de la matière' : 'Créez une nouvelle matière'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onCancel}
+              className="text-white hover:bg-white hover:bg-opacity-20 p-3 rounded-xl transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          {/* Informations de base */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-blue-100 p-2 rounded-lg mr-3">📖</span>
+              Informations de base
+            </h3>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Nom de la matière <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => handleInputChange('nom', e.target.value)}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-orange-100 transition-all ${
+                  errors.nom ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                }`}
+                placeholder="Ex: Mathématiques, Français, Sciences..."
+              />
+              {errors.nom && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.nom}</p>}
+            </div>
+          </div>
+
+          {/* Configuration avancée */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-purple-100 p-2 rounded-lg mr-3">⚙️</span>
+              Configuration avancée
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                

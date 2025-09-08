@@ -1,479 +1,289 @@
-import { useState, useEffect, useRef } from 'react';
-import LoginForm from './components/Auth/LoginForm';
-import auth from './utils/auth';
-import { db } from './utils/database';
-import { Eleve, Classe, Enseignant, Matiere, Paiement } from './types';
-import { Search } from 'lucide-react';
-import ConfigCompositions from './components/Config/ConfigCompositions';
-import ConfigImpression from './components/Config/ConfigImpression';
-import FinancesList from './components/Finances/FinancesList';
-import NotesList from './components/Notes/NotesList';
-import Header from './components/Layout/Header';
-import Guide from './components/Guide';
-import Dashboard from './components/Dashboard/Dashboard';
-import ElevesList from './components/Eleves/ElevesList';
-import EleveForm from './components/Eleves/EleveForm';
-import ClassesList from './components/Classes/ClassesList';
-import ClasseForm from './components/Classes/ClasseForm';
-import MatieresList from './components/Matieres/MatieresList';
-import MatiereForm from './components/Matieres/MatiereForm';
-import EnseignantsList from './components/Enseignants/EnseignantsList';
-import EnseignantForm from './components/Enseignants/EnseignantForm';
+import React, { useState, useEffect } from 'react';
+import { useToast } from '../Layout/ToastProvider';
+import { Save, X } from 'lucide-react';
+import { db } from '../../utils/database';
+import { Matiere } from '../../types';
 
-import { ToastProvider } from './components/Layout/ToastProvider';
-import { Loader2 } from 'lucide-react';
-import { ensureDefaultFrais } from './utils/defaultFraisScolaires';
-import { seedDefaults } from './utils/seedDefaults';
+interface MatiereFormProps {
+  matiere?: Matiere | null;
+  onSave: (matiere: Matiere) => void;
+  onCancel: () => void;
+}
 
-
-function App() {
-  // État d'authentification
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  // Vérifier l'authentification au démarrage
-  useEffect(() => {
-    const user = auth.getCurrentUser();
-    if (user) {
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  const handleLogin = (user: any) => {
-    setCurrentUser(user);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    auth.logout();
-    setCurrentUser(null);
-    setIsAuthenticated(false);
-  };
-
-
-  // Gérer la navigation via CustomEvent (pour Dashboard)
-  // Hooks d'état principaux (déclarés une seule fois)
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [selectedEleve, setSelectedEleve] = useState<Eleve | null>(null);
-  const [showEleveForm, setShowEleveForm] = useState(false);
-  // Hooks d'état pour les classes
-  const [selectedClasse, setSelectedClasse] = useState<Classe | null>(null);
-  const [showClasseForm, setShowClasseForm] = useState(false);
-  // Hooks d'état pour les matières
-  const [selectedMatiere, setSelectedMatiere] = useState<Matiere | null>(null);
-  const [showMatiereForm, setShowMatiereForm] = useState(false);
-  // Hooks d'état pour les enseignants
-  const [selectedEnseignant, setSelectedEnseignant] = useState<Enseignant | null>(null);
-  const [showEnseignantForm, setShowEnseignantForm] = useState(false);
-  // Utilisateur courant (admin par défaut)
-  // currentUser est maintenant géré par l'authentification
-
-  useEffect(() => {
-    const listener = (e: Event) => {
-      const custom = e as CustomEvent;
-      if (custom.detail && custom.detail.page) {
-        setCurrentPage(custom.detail.page);
-        if (custom.detail.page === 'eleves' && custom.detail.action === 'new') {
-          setSelectedEleve(null);
-          setShowEleveForm(true);
-        }
-        if (custom.detail.page === 'finances' && custom.detail.action === 'new') {
-          // Pas de formulaire spécial, juste aller à la page finances
-        }
-        if (custom.detail.page === 'notes' && custom.detail.action === 'new') {
-          // Pas de formulaire spécial, juste aller à la page notes
-        }
-      }
-    };
-    window.addEventListener('navigate', listener as EventListener);
-    return () => window.removeEventListener('navigate', listener as EventListener);
-  }, [setCurrentPage, setSelectedEleve, setShowEleveForm]);
-  // Initialiser les frais scolaires par défaut au démarrage (si manquants)
-  useEffect(() => {
-    try {
-      const defaultAnnee = new Date().getFullYear() + '-' + (new Date().getFullYear() + 1);
-      const anneeActive = localStorage.getItem('anneeActive') || defaultAnnee;
-      const created = ensureDefaultFrais(anneeActive);
-      if (created && created > 0) {
-        console.log(`ensureDefaultFrais: ${created} enregistrements créés pour ${anneeActive}`);
-      }
-      // Seed default classes and placeholder teachers if missing
-      try {
-        seedDefaults();
-      } catch (err) {
-        console.error('Erreur seedDefaults', err);
-      }
-    } catch (err) {
-      console.error('Erreur lors de l\'initialisation des frais par défaut', err);
-    }
-  }, []);
-  const [showGuide, setShowGuide] = useState(() => {
-    return localStorage.getItem('guideShown') !== '1';
+export default function MatiereForm({ matiere, onSave, onCancel }: MatiereFormProps) {
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState({
+    nom: '',
+    coefficient: 1,
+    type: 'Fondamentale' as 'Fondamentale' | 'Éveil' | 'Expression',
+    obligatoire: true,
+    classeIds: [] as string[]
   });
 
-  const handleCloseGuide = () => {
-    setShowGuide(false);
-    localStorage.setItem('guideShown', '1');
-  };
-  const [loading, setLoading] = useState(false);
-  // (Supprimé les doublons de hooks d'état déjà déclarés plus haut)
-  const [searchTerm, setSearchTerm] = useState('');
-  type SearchResult =
-    | { type: 'Élève'; label: string; id: string; data: Eleve }
-    | { type: 'Classe'; label: string; id: string; data: Classe }
-    | { type: 'Enseignant'; label: string; id: string; data: Enseignant }
-    | { type: 'Matière'; label: string; id: string; data: Matiere }
-    | { type: 'Paiement'; label: string; id: string; data: Paiement };
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Recherche globale sur toutes les entités principales
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setSearchResults([]);
-      return;
+    if (matiere) {
+      setFormData({
+        nom: matiere.nom,
+        coefficient: matiere.coefficient,
+        type: matiere.type,
+        obligatoire: matiere.obligatoire,
+        classeIds: matiere.classeIds || []
+      });
     }
-    const eleves = db.getAll<Eleve>('eleves') || [];
-    const classes = db.getAll<Classe>('classes') || [];
-    const enseignants = db.getAll<Enseignant>('enseignants') || [];
-    const matieres = db.getAll<Matiere>('matieres') || [];
-    const paiements = db.getAll<Paiement>('paiements') || [];
-    const term = searchTerm.toLowerCase();
-    const results: SearchResult[] = [];
-    eleves.forEach((e) => {
-      if (
-        e.nom?.toLowerCase().includes(term) ||
-        e.prenoms?.toLowerCase().includes(term) ||
-        e.matricule?.toLowerCase().includes(term)
-      ) {
-        results.push({ type: 'Élève', label: `${e.prenoms} ${e.nom}`, id: e.id, data: e });
+  }, [matiere]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom de la matière est obligatoire';
+    if (formData.coefficient < 1 || formData.coefficient > 10) newErrors.coefficient = 'Le coefficient doit être entre 1 et 10';
+
+    const matieres = db.getAll<Matiere>('matieres');
+    const existingMatiere = matieres.find(m => 
+      m.nom.toLowerCase() === formData.nom.toLowerCase() && 
+      m.id !== matiere?.id
+    );
+    if (existingMatiere) {
+      newErrors.nom = 'Une matière avec ce nom existe déjà';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSaving(true);
+    try {
+      if (matiere) {
+        const updatedMatiere = db.update<Matiere>('matieres', matiere.id, formData);
+        if (updatedMatiere) {
+          showToast('Matière mise à jour avec succès', 'success');
+          onSave(updatedMatiere);
+        }
+      } else {
+        const newMatiere = db.create<Matiere>('matieres', formData);
+        showToast('Matière ajoutée avec succès', 'success');
+        onSave(newMatiere);
       }
-    });
-    classes.forEach((c) => {
-      if (
-        c.niveau?.toLowerCase().includes(term) ||
-        c.section?.toLowerCase().includes(term)
-      ) {
-        results.push({ type: 'Classe', label: `${c.niveau} ${c.section || ''}`.trim(), id: c.id, data: c });
-      }
-    });
-    enseignants.forEach((ens) => {
-      if (
-        ens.nom?.toLowerCase().includes(term) ||
-        ens.prenoms?.toLowerCase().includes(term)
-      ) {
-        results.push({ type: 'Enseignant', label: `${ens.prenoms} ${ens.nom}`, id: ens.id, data: ens });
-      }
-    });
-    matieres.forEach((m) => {
-      if (m.nom?.toLowerCase().includes(term)) {
-        results.push({ type: 'Matière', label: m.nom, id: m.id, data: m });
-      }
-    });
-    paiements.forEach((p) => {
-      if ((p as any).numeroRecu && String((p as any).numeroRecu).toLowerCase().includes(term)) {
-        results.push({ type: 'Paiement', label: (p as any).numeroRecu, id: p.id, data: p });
-      }
-    });
-    setSearchResults(results);
-  }, [searchTerm]);
-
-  // Navigation rapide depuis la recherche
-  const handleSearchSelect = (item: SearchResult) => {
-    setShowSearchDropdown(false);
-    setSearchTerm('');
-    if (item.type === 'Élève') {
-      setCurrentPage('eleves');
-      setSelectedEleve(item.data);
-      setShowEleveForm(true);
-    } else if (item.type === 'Classe') {
-      setCurrentPage('classes');
-      setSelectedClasse(item.data);
-      setShowClasseForm(true);
-    } else if (item.type === 'Enseignant') {
-      setCurrentPage('enseignants');
-      setSelectedEnseignant(item.data);
-      setShowEnseignantForm(true);
-    } else if (item.type === 'Matière') {
-      setCurrentPage('matieres');
-      setSelectedMatiere(item.data);
-      setShowMatiereForm(true);
-    } else if (item.type === 'Paiement') {
-      setCurrentPage('finances');
+    } catch {
+      showToast('Erreur lors de la sauvegarde de la matière', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // ...autres hooks déjà déclarés plus haut...
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page);
-    setSelectedEleve(null);
-    setShowEleveForm(false);
-    setSelectedClasse(null);
-    setShowClasseForm(false);
-    setSelectedMatiere(null);
-    setShowMatiereForm(false);
-    setSelectedEnseignant(null);
-    setShowEnseignantForm(false);
-  };
-
-  const handleEleveSelect = (eleve: Eleve | null) => {
-    setSelectedEleve(eleve);
-    setShowEleveForm(true);
-  };
-
-  const handleNewEleve = () => {
-    setSelectedEleve(null);
-    setShowEleveForm(true);
-  };
-
-  const handleEleveSave = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setShowEleveForm(false);
-      setSelectedEleve(null);
-      setLoading(false);
-    }, 600);
-  };
-
-  const handleEleveCancel = () => {
-    setShowEleveForm(false);
-    setSelectedEleve(null);
-  };
-
-  // Handlers pour les classes
-  const handleClasseSelect = (classe: Classe | null) => {
-    setSelectedClasse(classe);
-    setShowClasseForm(true);
-  };
-
-  const handleNewClasse = () => {
-    setSelectedClasse(null);
-    setShowClasseForm(true);
-  };
-
-  const handleClasseSave = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setShowClasseForm(false);
-      setSelectedClasse(null);
-      setLoading(false);
-    }, 600);
-  };
-
-  const handleClasseCancel = () => {
-    setShowClasseForm(false);
-    setSelectedClasse(null);
-  };
-
-  // Handlers pour les matières
-  const handleMatiereSelect = (matiere: Matiere | null) => {
-    setSelectedMatiere(matiere);
-    setShowMatiereForm(true);
-  };
-
-  const handleNewMatiere = () => {
-    setSelectedMatiere(null);
-    setShowMatiereForm(true);
-  };
-
-  const handleMatiereSave = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setShowMatiereForm(false);
-      setSelectedMatiere(null);
-      setLoading(false);
-    }, 600);
-  };
-
-  const handleMatiereCancel = () => {
-    setShowMatiereForm(false);
-    setSelectedMatiere(null);
-  };
-
-  // Handlers pour les enseignants
-  const handleEnseignantSelect = (enseignant: Enseignant | null) => {
-    setSelectedEnseignant(enseignant);
-    setShowEnseignantForm(true);
-  };
-
-  const handleNewEnseignant = () => {
-    setSelectedEnseignant(null);
-    setShowEnseignantForm(true);
-  };
-
-  const handleEnseignantSave = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setShowEnseignantForm(false);
-      setSelectedEnseignant(null);
-      setLoading(false);
-    }, 600);
-  };
-
-  const handleEnseignantCancel = () => {
-    setShowEnseignantForm(false);
-    setSelectedEnseignant(null);
-  };
-
-  const renderMainContent = () => {
-    if (currentPage === 'eleves') {
-      if (showEleveForm) {
-        return (
-          <EleveForm
-            eleve={selectedEleve}
-            onSave={handleEleveSave}
-            onCancel={handleEleveCancel}
-          />
-        );
-      }
-      return (
-        <ElevesList
-          onEleveSelect={handleEleveSelect}
-          onNewEleve={handleNewEleve}
-        />
-      );
+  const handleInputChange = (field: keyof typeof formData, value: unknown) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
-
-    if (currentPage === 'classes') {
-      if (showClasseForm) {
-        return (
-          <ClasseForm
-            classe={selectedClasse}
-            onSave={handleClasseSave}
-            onCancel={handleClasseCancel}
-          />
-        );
-      }
-      return (
-        <ClassesList
-          onClasseSelect={handleClasseSelect}
-          onNewClasse={handleNewClasse}
-        />
-      );
-    }
-
-    if (currentPage === 'matieres') {
-      if (showMatiereForm) {
-        return (
-          <MatiereForm
-            matiere={selectedMatiere}
-            onSave={handleMatiereSave}
-            onCancel={handleMatiereCancel}
-          />
-        );
-      }
-      return (
-        <MatieresList
-          onMatiereSelect={handleMatiereSelect}
-          onNewMatiere={handleNewMatiere}
-        />
-      );
-    }
-
-    if (currentPage === 'enseignants') {
-      if (showEnseignantForm) {
-        return (
-          <EnseignantForm
-            enseignant={selectedEnseignant}
-            onSave={handleEnseignantSave}
-            onCancel={handleEnseignantCancel}
-          />
-        );
-      }
-      return (
-        <EnseignantsList
-          onEnseignantSelect={handleEnseignantSelect}
-          onNewEnseignant={handleNewEnseignant}
-        />
-      );
-    }
-
-    if (currentPage === 'finances') {
-  return <FinancesList />;
-    }
-
-    if (currentPage === 'notes') {
-  return <NotesList />;
-    }
-
-
-    if (currentPage === 'config') {
-      return <ConfigCompositions />;
-    }
-
-    if (currentPage === 'config-impression') {
-      return <ConfigImpression />;
-    }
-
-    return <Dashboard />;
   };
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-gray-50 relative">
-        <Header
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          onNavigate={handleNavigate}
-          currentPage={currentPage}
-          onShowGuide={() => setShowGuide(true)}
-        />
-        {/* Si pas authentifié, afficher le formulaire de connexion */}
-        {!isAuthenticated ? (
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <LoginForm onLogin={handleLogin} />
-          </div>
-        ) : (
-          <div className="flex justify-center mt-2 mb-2">
-            <div className="relative w-full max-w-xl">
-              <input
-                ref={searchInputRef}
-                type="text"
-                className="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                placeholder="Recherche rapide (élève, classe, enseignant, matière, paiement...)"
-                value={searchTerm}
-                onChange={e => {
-                  setSearchTerm(e.target.value);
-                  setShowSearchDropdown(true);
-                }}
-                onFocus={() => setShowSearchDropdown(true)}
-                onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
-              />
-              <Search className="absolute right-3 top-2.5 text-gray-400" />
-              {showSearchDropdown && searchResults.length > 0 && (
-                <div className="absolute z-50 w-full bg-white border rounded-lg shadow-lg mt-1 max-h-64 overflow-y-auto">
-                  {searchResults.map((item, idx) => (
-                    <button
-                      key={item.type + '-' + item.id + '-' + idx}
-                      className="w-full text-left px-4 py-2 hover:bg-teal-50 border-b last:border-b-0 text-sm"
-                      onMouseDown={() => handleSearchSelect(item)}
-                    >
-                      <span className="font-semibold text-teal-700">[{item.type}]</span> {item.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        <main>
-          {loading && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-              <div className="flex flex-col items-center">
-                <Loader2 className="animate-spin h-12 w-12 text-teal-600 mb-4" />
-                <span className="text-white text-lg font-semibold">Chargement...</span>
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        {/* En-tête moderne */}
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
+                <span className="text-3xl">📚</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {matiere ? 'Modifier la matière' : 'Nouvelle matière'}
+                </h1>
+                <p className="text-orange-100 mt-1">
+                  {matiere ? 'Modifiez les informations de la matière' : 'Créez une nouvelle matière'}
+                </p>
               </div>
             </div>
-          )}
-          {renderMainContent()}
-    {showGuide && <Guide onClose={handleCloseGuide} />}
-        </main>
+            <button
+              onClick={onCancel}
+              className="text-white hover:bg-white hover:bg-opacity-20 p-3 rounded-xl transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          {/* Informations de base */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-blue-100 p-2 rounded-lg mr-3">📖</span>
+              Informations de base
+            </h3>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Nom de la matière <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.nom}
+                onChange={(e) => handleInputChange('nom', e.target.value)}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-orange-100 transition-all ${
+                  errors.nom ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                }`}
+                placeholder="Ex: Mathématiques, Français, Sciences..."
+              />
+              {errors.nom && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.nom}</p>}
+            </div>
+          </div>
+
+          {/* Configuration avancée */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-purple-100 p-2 rounded-lg mr-3">⚙️</span>
+              Configuration avancée
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Type de matière <span className="text-red-500">*</span>
+                </label>
+                <div className="space-y-3">
+                  {[
+                    { value: 'Fondamentale', label: '🎯 Fondamentale', desc: 'Matières principales (Français, Maths...)', color: 'blue' },
+                    { value: 'Éveil', label: '🌱 Éveil', desc: 'Matières d\'éveil (Sciences, Histoire...)', color: 'green' },
+                    { value: 'Expression', label: '🎨 Expression', desc: 'Matières d\'expression (Arts, Sport...)', color: 'purple' }
+                  ].map(type => (
+                    <label key={type.value} className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.type === type.value 
+                        ? `border-${type.color}-500 bg-${type.color}-50` 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="type"
+                        value={type.value}
+                        checked={formData.type === type.value}
+                        onChange={(e) => handleInputChange('type', e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-900">{type.label}</div>
+                        <div className="text-sm text-gray-600 mt-1">{type.desc}</div>
+                      </div>
+                      {formData.type === type.value && (
+                        <div className={`w-6 h-6 bg-${type.color}-600 rounded-full flex items-center justify-center ml-3`}>
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Coefficient <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={formData.coefficient}
+                      onChange={(e) => handleInputChange('coefficient', parseInt(e.target.value))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-orange-100 transition-all ${
+                        errors.coefficient ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-orange-500'
+                      }`}
+                      min="1"
+                      max="100"
+                    />
+                    {errors.coefficient && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.coefficient}</p>}
+                    <p className="mt-2 text-xs text-gray-500">
+                      Poids de la matière dans le calcul de la moyenne (1-100)
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={formData.obligatoire}
+                      onChange={(e) => handleInputChange('obligatoire', e.target.checked)}
+                      className="w-5 h-5 text-orange-600 border-2 border-gray-300 rounded focus:ring-orange-500"
+                    />
+                    <span className="text-sm font-semibold text-gray-700">
+                      Matière obligatoire
+                    </span>
+                  </label>
+                  <p className="mt-2 text-xs text-gray-500 ml-8">
+                    Les matières obligatoires doivent être enseignées dans toutes les classes du niveau correspondant
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Exemples de coefficients */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-4 flex items-center">
+              <span className="bg-blue-100 p-2 rounded-lg mr-3">💡</span>
+              Exemples de coefficients par niveau
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+              <div className="bg-white rounded-xl p-4 border border-blue-200">
+                <p className="font-semibold text-blue-800 mb-2">CE1 à CM2</p>
+                <div className="space-y-1 text-blue-700">
+                  <p>• Maths: /50</p>
+                  <p>• Éveil au Milieu: /50</p>
+                  <p>• Exploitation de texte: /50</p>
+                  <p>• Orthographe: /20</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-blue-200">
+                <p className="font-semibold text-blue-800 mb-2">CP1 et CP2</p>
+                <div className="space-y-1 text-blue-700">
+                  <p>• Français: /20</p>
+                  <p>• Maths: /20</p>
+                  <p>• Sciences: /20</p>
+                  <p>• Arts: /20</p>
+                  <p>• Sport: /20</p>
+                  <p>• + autres matières...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-8 py-4 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl hover:from-orange-700 hover:to-red-700 focus:ring-4 focus:ring-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : (
+                <Save className="h-5 w-5" />
+              )}
+              <span className="font-semibold">
+                {matiere ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour la matière') : (isSaving ? 'Sauvegarde...' : 'Créer la matière')}
+              </span>
+            </button>
+          </div>
+        </form>
       </div>
-    </ToastProvider>
+    </div>
   );
 }
-
-export default App;
