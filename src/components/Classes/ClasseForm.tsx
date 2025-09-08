@@ -128,162 +128,195 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
   };
 
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {classe ? 'Modifier la classe' : 'Nouvelle classe'}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {classe ? 'Modifiez les informations de la classe' : 'Créez une nouvelle classe'}
-            </p>
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        {/* En-tête moderne */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
+                <span className="text-2xl">🏫</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {classe ? 'Modifier la classe' : 'Nouvelle classe'}
+                </h1>
+                <p className="text-purple-100 mt-1">
+                  {classe ? 'Modifiez les informations de la classe' : 'Créez une nouvelle classe'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onCancel}
+              className="text-white hover:bg-white hover:bg-opacity-20 p-3 rounded-xl transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Niveau <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.niveau}
-                onChange={(e) => handleInputChange('niveau', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.niveau ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-              >
-                <option value="Petite Section">Petite Section</option>
-                <option value="Moyenne Section">Moyenne Section</option>
-                <option value="Grande Section">Grande Section</option>
-                <option value="CP1">CP1</option>
-                <option value="CP2">CP2</option>
-                <option value="CE1">CE1</option>
-                <option value="CE2">CE2</option>
-                <option value="CM1">CM1</option>
-                <option value="CM2">CM2</option>
-              </select>
-              {errors.niveau && <p className="mt-1 text-xs text-red-600">{errors.niveau}</p>}
-            </div>
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          {/* Informations de base */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-blue-100 p-2 rounded-lg mr-3">📚</span>
+              Informations de base
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Niveau <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.niveau}
+                  onChange={(e) => handleInputChange('niveau', e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-100 transition-all ${
+                    errors.niveau ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
+                >
+                  <option value="Petite Section">Petite Section</option>
+                  <option value="Moyenne Section">Moyenne Section</option>
+                  <option value="Grande Section">Grande Section</option>
+                  <option value="CP1">CP1</option>
+                  <option value="CP2">CP2</option>
+                  <option value="CE1">CE1</option>
+                  <option value="CE2">CE2</option>
+                  <option value="CM1">CM1</option>
+                  <option value="CM2">CM2</option>
+                </select>
+                {errors.niveau && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.niveau}</p>}
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Section <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.section}
-                onChange={(e) => handleInputChange('section', e.target.value.toUpperCase())}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.section ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="A, B, C..."
-                maxLength={2}
-              />
-              {errors.section && <p className="mt-1 text-xs text-red-600">{errors.section}</p>}
-            </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Section <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.section}
+                  onChange={(e) => handleInputChange('section', e.target.value.toUpperCase())}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-100 transition-all ${
+                    errors.section ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
+                  placeholder="A, B, C..."
+                  maxLength={2}
+                />
+                {errors.section && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.section}</p>}
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Année scolaire <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.anneeScolaire}
-                onChange={(e) => handleInputChange('anneeScolaire', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.anneeScolaire ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="2024-2025"
-              />
-              {errors.anneeScolaire && <p className="mt-1 text-xs text-red-600">{errors.anneeScolaire}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Enseignant principal <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.enseignantPrincipal}
-                onChange={(e) => handleInputChange('enseignantPrincipal', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.enseignantPrincipal ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Sélectionner un enseignant</option>
-                {enseignants.filter(e => e.statut === 'Actif').map(enseignant => (
-                  <option key={enseignant.id} value={`${enseignant.prenoms} ${enseignant.nom}`}>
-                    {enseignant.prenoms} {enseignant.nom}
-                  </option>
-                ))}
-              </select>
-              {errors.enseignantPrincipal && <p className="mt-1 text-xs text-red-600">{errors.enseignantPrincipal}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Effectif maximum <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.effectifMax}
-                onChange={(e) => handleInputChange('effectifMax', parseInt(e.target.value))}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.effectifMax ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                min="1"
-                max="50"
-              />
-              {errors.effectifMax && <p className="mt-1 text-xs text-red-600">{errors.effectifMax}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Salle <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.salle}
-                onChange={(e) => handleInputChange('salle', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.salle ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="Salle 1, Salle A..."
-              />
-              {errors.salle && <p className="mt-1 text-xs text-red-600">{errors.salle}</p>}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Année scolaire <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.anneeScolaire}
+                  onChange={(e) => handleInputChange('anneeScolaire', e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-100 transition-all ${
+                    errors.anneeScolaire ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
+                  placeholder="2025-2026"
+                />
+                {errors.anneeScolaire && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.anneeScolaire}</p>}
+              </div>
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+          {/* Gestion et organisation */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-green-100 p-2 rounded-lg mr-3">👨‍🏫</span>
+              Gestion et organisation
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Enseignant principal <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.enseignantPrincipal}
+                  onChange={(e) => handleInputChange('enseignantPrincipal', e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-100 transition-all ${
+                    errors.enseignantPrincipal ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
+                >
+                  <option value="">Sélectionner un enseignant</option>
+                  {enseignants.filter(e => e.statut === 'Actif').map(enseignant => (
+                    <option key={enseignant.id} value={`${enseignant.prenoms} ${enseignant.nom}`}>
+                      {enseignant.prenoms} {enseignant.nom}
+                    </option>
+                  ))}
+                </select>
+                {errors.enseignantPrincipal && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.enseignantPrincipal}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Effectif maximum <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={formData.effectifMax}
+                  onChange={(e) => handleInputChange('effectifMax', parseInt(e.target.value))}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-100 transition-all ${
+                    errors.effectifMax ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
+                  min="1"
+                  max="50"
+                />
+                {errors.effectifMax && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.effectifMax}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Salle de classe <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.salle}
+                  onChange={(e) => handleInputChange('salle', e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-purple-100 transition-all ${
+                    errors.salle ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-purple-500'
+                  }`}
+                  placeholder="Ex: Salle 1, Salle A..."
+                />
+                {errors.salle && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.salle}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Matières enseignées */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-yellow-100 p-2 rounded-lg mr-3">📖</span>
               Matières enseignées <span className="text-red-500">*</span>
             </h3>
             
-            {errors.matieres && <p className="mb-4 text-sm text-red-600">{errors.matieres}</p>}
+            {errors.matieres && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-red-600 flex items-center">
+                  <span className="mr-2">⚠️</span>
+                  {errors.matieres}
+                </p>
+              </div>
+            )}
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               {['Fondamentale', 'Éveil', 'Expression'].map(type => (
-                <div key={type}>
-                  <h4 className="font-medium text-gray-700 mb-3">{type}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div key={type} className="bg-gray-50 rounded-xl p-6">
+                  <h4 className="font-semibold text-gray-800 mb-4 text-lg">{type}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {getMatieresByType(type).map(matiere => {
                       const isSelected = selectedMatieres.find(m => m.id === matiere.id);
                       return (
                         <label
                           key={matiere.id}
-                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                          className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all transform hover:scale-105 ${
                             isSelected 
-                              ? 'border-teal-500 bg-teal-50' 
-                              : 'border-gray-200 hover:bg-gray-50'
+                              ? 'border-teal-500 bg-teal-50 shadow-md' 
+                              : 'border-gray-200 hover:border-gray-300 bg-white'
                           }`}
                         >
                           <input
@@ -293,19 +326,21 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
                             className="sr-only"
                           />
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">{matiere.nom}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="font-semibold text-gray-900">{matiere.nom}</div>
+                            <div className="text-sm text-gray-600 mt-1">
                               Coefficient: {matiere.coefficient}
                               {matiere.obligatoire && (
-                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
                                   Obligatoire
                                 </span>
                               )}
                             </div>
                           </div>
                           {isSelected && (
-                            <div className="w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
+                            <div className="w-6 h-6 bg-teal-600 rounded-full flex items-center justify-center ml-3">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </div>
                           )}
                         </label>
@@ -316,40 +351,48 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
               ))}
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>{selectedMatieres.length}</strong> matière(s) sélectionnée(s)
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Coefficient total: {selectedMatieres.reduce((sum, m) => sum + m.coefficient, 0)}
-              </p>
+            <div className="mt-6 p-6 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold text-blue-900">
+                    {selectedMatieres.length} matière(s) sélectionnée(s)
+                  </p>
+                  <p className="text-blue-700 mt-1">
+                    Coefficient total: {selectedMatieres.reduce((sum, m) => sum + m.coefficient, 0)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {selectedMatieres.length}
+                  </div>
+                  <p className="text-blue-600 text-sm">matières</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+          {/* Actions */}
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-8 py-4 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 focus:ring-4 focus:ring-purple-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               disabled={isSaving}
-              aria-busy={isSaving}
-              aria-label={classe ? 'Mettre à jour la classe' : 'Créer la classe'}
             >
               {isSaving ? (
-                <svg className="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                <Save className="h-4 w-4" />
+                <Save className="h-5 w-5" />
               )}
-              <span>{classe ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour') : (isSaving ? 'Sauvegarde...' : 'Créer la classe')}</span>
+              <span className="font-semibold">
+                {classe ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour la classe') : (isSaving ? 'Sauvegarde...' : 'Créer la classe')}
+              </span>
             </button>
           </div>
         </form>

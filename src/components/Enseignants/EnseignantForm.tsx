@@ -101,7 +101,7 @@ interface EnseignantFormProps {
         onSave(newEnseignant);
       }
     } catch {
-      showToast('Erreur lors de la sauvegarde de l’enseignant', 'error');
+      showToast('Erreur lors de la sauvegarde de l'enseignant', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -116,7 +116,7 @@ interface EnseignantFormProps {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-          showToast('Erreur lors de la sauvegarde de l’enseignant', 'error');
+          showToast('Erreur lors de la sauvegarde de l'enseignant', 'error');
       const reader = new FileReader();
       reader.onload = (e) => {
         setFormData(prev => ({ ...prev, photo: e.target?.result as string }));
@@ -126,251 +126,301 @@ interface EnseignantFormProps {
   };
 
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {enseignant ? 'Modifier l\'enseignant' : 'Nouvel enseignant'}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {enseignant ? 'Modifiez les informations de l\'enseignant' : 'Ajoutez un nouvel enseignant'}
-            </p>
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        {/* En-tête moderne */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
+                <User className="h-8 w-8" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {enseignant ? 'Modifier l\'enseignant' : 'Nouvel enseignant'}
+                </h1>
+                <p className="text-indigo-100 mt-1">
+                  {enseignant ? 'Modifiez les informations de l\'enseignant' : 'Ajoutez un nouvel enseignant'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onCancel}
+              className="text-white hover:bg-white hover:bg-opacity-20 p-3 rounded-xl transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
-          <button
-            onClick={onCancel}
-            className="p-2 text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="flex items-start space-x-6">
-            <div className="flex-shrink-0">
-              <div className="w-24 h-24 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative">
-                {formData.photo ? (
-                  <img 
-                    src={formData.photo} 
-                    alt="Photo enseignant"
-                    className="w-full h-full object-cover rounded-lg"
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          {/* Section photo et informations de base */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
+            <div className="flex items-start space-x-8">
+              <div className="flex-shrink-0">
+                <div className="w-32 h-32 bg-white rounded-2xl border-4 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden group hover:border-indigo-400 transition-colors">
+                  {formData.photo ? (
+                    <img 
+                      src={formData.photo} 
+                      alt="Photo enseignant"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <User className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-500">Photo enseignant</p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                ) : (
-                  <User className="h-8 w-8 text-gray-400" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
+                </div>
+                <button
+                  type="button"
+                  className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Changer photo
+                </button>
               </div>
-              <button
-                type="button"
-                className="mt-2 w-24 flex items-center justify-center px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                <Upload className="h-3 w-3 mr-1" />
-                Photo
-              </button>
-            </div>
-            
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.nom}
-                  onChange={(e) => handleInputChange('nom', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                    errors.nom ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                />
-                {errors.nom && <p className="mt-1 text-xs text-red-600">{errors.nom}</p>}
-              </div>
+              
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Nom <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nom}
+                    onChange={(e) => handleInputChange('nom', e.target.value)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all ${
+                      errors.nom ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'
+                    }`}
+                    placeholder="Nom de famille"
+                  />
+                  {errors.nom && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.nom}</p>}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Prénoms <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.prenoms}
-                  onChange={(e) => handleInputChange('prenoms', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                    errors.prenoms ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                />
-                {errors.prenoms && <p className="mt-1 text-xs text-red-600">{errors.prenoms}</p>}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Prénoms <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.prenoms}
+                    onChange={(e) => handleInputChange('prenoms', e.target.value)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all ${
+                      errors.prenoms ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'
+                    }`}
+                    placeholder="Prénoms"
+                  />
+                  {errors.prenoms && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.prenoms}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Sexe <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.sexe === 'M' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="sexe"
+                        value="M"
+                        checked={formData.sexe === 'M'}
+                        onChange={(e) => handleInputChange('sexe', e.target.value)}
+                        className="sr-only"
+                      />
+                      <span className="font-medium">👨 Masculin</span>
+                    </label>
+                    <label className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.sexe === 'F' ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="sexe"
+                        value="F"
+                        checked={formData.sexe === 'F'}
+                        onChange={(e) => handleInputChange('sexe', e.target.value)}
+                        className="sr-only"
+                      />
+                      <span className="font-medium">👩 Féminin</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.telephone}
+                    onChange={(e) => handleInputChange('telephone', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                    placeholder="+225 XX XX XX XX XX"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sexe <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.sexe}
-                onChange={(e) => handleInputChange('sexe', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              >
-                <option value="M">Masculin</option>
-                <option value="F">Féminin</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Téléphone
-              </label>
-              <input
-                type="tel"
-                value={formData.telephone}
-                onChange={(e) => handleInputChange('telephone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                placeholder="+225 XX XX XX XX XX"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="email@exemple.com"
-              />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Informations Professionnelles</h3>
+          {/* Informations professionnelles */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <span className="bg-green-100 p-2 rounded-lg mr-3">🎓</span>
+              Informations professionnelles
+            </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Spécialité <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.specialite}
                   onChange={(e) => handleInputChange('specialite', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                    errors.specialite ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all ${
+                    errors.specialite ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'
                   }`}
                   placeholder="Ex: Instituteur, Professeur des écoles..."
                 />
-                {errors.specialite && <p className="mt-1 text-xs text-red-600">{errors.specialite}</p>}
+                {errors.specialite && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.specialite}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Diplôme <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.diplome}
                   onChange={(e) => handleInputChange('diplome', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                    errors.diplome ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all ${
+                    errors.diplome ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'
                   }`}
                   placeholder="Ex: CEAP, Licence, Master..."
                 />
-                {errors.diplome && <p className="mt-1 text-xs text-red-600">{errors.diplome}</p>}
+                {errors.diplome && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.diplome}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Date d'embauche <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   value={formData.dateEmbauche}
                   onChange={(e) => handleInputChange('dateEmbauche', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                    errors.dateEmbauche ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all ${
+                    errors.dateEmbauche ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'
                   }`}
                 />
-                {errors.dateEmbauche && <p className="mt-1 text-xs text-red-600">{errors.dateEmbauche}</p>}
+                {errors.dateEmbauche && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.dateEmbauche}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Statut
                 </label>
-                <select
-                  value={formData.statut}
-                  onChange={(e) => handleInputChange('statut', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                >
-                  <option value="Actif">Actif</option>
-                  <option value="Inactif">Inactif</option>
-                  <option value="Congé">En congé</option>
-                </select>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: 'Actif', label: '✅ Actif', color: 'green' },
+                    { value: 'Inactif', label: '⏸️ Inactif', color: 'gray' },
+                    { value: 'Congé', label: '🏖️ Congé', color: 'orange' }
+                  ].map(statut => (
+                    <label key={statut.value} className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.statut === statut.value 
+                        ? `border-${statut.color}-500 bg-${statut.color}-50 text-${statut.color}-700` 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="statut"
+                        value={statut.value}
+                        checked={formData.statut === statut.value}
+                        onChange={(e) => handleInputChange('statut', e.target.value)}
+                        className="sr-only"
+                      />
+                      <span className="font-medium text-sm">{statut.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salaire (FCFA)
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Email professionnel
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-4 focus:ring-indigo-100 transition-all ${
+                    errors.email ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-200 focus:border-indigo-500'
+                  }`}
+                  placeholder="email@ecole.ci"
+                />
+                {errors.email && <p className="mt-2 text-sm text-red-600 flex items-center"><span className="mr-1">⚠️</span>{errors.email}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Salaire mensuel (FCFA)
                 </label>
                 <input
                   type="number"
                   value={formData.salaire}
                   onChange={(e) => handleInputChange('salaire', parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
                   min="0"
                   placeholder="0"
                 />
               </div>
             </div>
 
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Adresse
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Adresse de résidence
               </label>
               <textarea
                 value={formData.adresse}
                 onChange={(e) => handleInputChange('adresse', e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all resize-none"
                 placeholder="Adresse complète de résidence"
               />
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+          {/* Actions */}
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-8 py-4 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors font-semibold"
             >
               Annuler
             </button>
             <button
               type="submit"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:ring-4 focus:ring-indigo-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               disabled={isSaving}
-              aria-busy={isSaving}
-              aria-label={enseignant ? 'Mettre à jour l’enseignant' : 'Enregistrer l’enseignant'}
             >
               {isSaving ? (
-                <svg className="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                <Save className="h-4 w-4" />
+                <Save className="h-5 w-5" />
               )}
-              <span>{enseignant ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour') : (isSaving ? 'Sauvegarde...' : 'Enregistrer')}</span>
+              <span className="font-semibold">
+                {enseignant ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour l\'enseignant') : (isSaving ? 'Sauvegarde...' : 'Enregistrer l\'enseignant')}
+              </span>
             </button>
           </div>
         </form>
