@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 // Payment UI moved to Finances; no receipt component here
 import { useToast } from '../Layout/ToastProvider';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, User, X, Camera } from 'lucide-react';
 import { db } from '../../utils/database';
 import { Eleve, Classe } from '../../types';
 
@@ -162,37 +162,88 @@ const [formData, setFormData] = useState({
   };
 
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200">
-        <form onSubmit={handleSubmit}>
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div>
-              <label className="relative inline-block ml-4">
-                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                <button
-                  type="button"
-                  className="mt-2 w-24 flex items-center justify-center px-3 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  <Upload className="h-3 w-3 mr-1" />
-                  Photo
-                </button>
-              </label>
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        {/* En-tête moderne */}
+        <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white bg-opacity-20 p-4 rounded-xl">
+                <User className="h-8 w-8" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">
+                  {eleve ? 'Modifier l\'élève' : 'Nouvel élève'}
+                </h1>
+                <p className="text-teal-100 mt-1">
+                  {eleve ? 'Modifiez les informations de l\'élève' : 'Inscription d\'un nouvel élève'}
+                </p>
+              </div>
             </div>
-            
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Matricule
-              </label>
-              <input
-                type="text"
-                value={formData.matricule}
-                readOnly
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg font-mono text-sm"
-              />
+            <button
+              onClick={onCancel}
+              className="text-white hover:bg-white hover:bg-opacity-20 p-3 rounded-xl transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          {/* Section photo et matricule */}
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6">
+            <div className="flex items-start space-x-8">
+              <div className="flex-shrink-0">
+                <div className="relative">
+                  <div className="w-32 h-32 bg-white rounded-2xl border-4 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden group hover:border-teal-400 transition-colors">
+                    {formData.photo ? (
+                      <img 
+                        src={formData.photo} 
+                        alt="Photo élève"
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-xs text-gray-500">Photo élève</p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Changer photo
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="bg-white rounded-xl p-6 border border-gray-200">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Matricule automatique
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-teal-50 border-2 border-teal-200 rounded-xl px-4 py-3 flex-1">
+                      <span className="font-mono text-xl font-bold text-teal-700">
+                        {formData.matricule}
+                      </span>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded-xl">
+                      <span className="text-green-600 text-sm font-medium">✓ Généré</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Statut financier et versements gérés dans l'onglet Finances */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
