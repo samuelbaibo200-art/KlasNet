@@ -1,69 +1,53 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../Layout/ToastProvider';
 import { Save, X } from 'lucide-react';
 import { db } from '../../utils/database';
-import { useToast } from '../Layout/ToastProvider';
-import { Classe, Matiere, Enseignant } from '../../types';
+import { Matiere } from '../../types';
 
-interface ClasseFormProps {
-  classe?: Classe | null;
-  onSave: (classe: Classe) => void;
+interface MatiereFormProps {
+  matiere?: Matiere | null;
+  onSave: (matiere: Matiere) => void;
   onCancel: () => void;
 }
 
-export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps) {
-  type Niveau = 'CP1' | 'CP2' | 'CE1' | 'CE2' | 'CM1' | 'CM2';
-
+export default function MatiereForm({ matiere, onSave, onCancel }: MatiereFormProps) {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
-    niveau: 'CP1' as Niveau,
-    section: 'A',
-    anneeScolaire: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
-    enseignantPrincipal: '',
-    effectifMax: 35,
-    salle: ''
+    nom: '',
+    coefficient: 1,
+    type: 'Fondamentale' as 'Fondamentale' | 'Éveil' | 'Expression',
+    obligatoire: true,
+    classeIds: [] as string[]
   });
 
-  const { showToast } = useToast();
-  const [selectedMatieres, setSelectedMatieres] = useState<Matiere[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const matieres = db.getAll<Matiere>('matieres');
-  const enseignants = db.getAll<Enseignant>('enseignants');
-
   useEffect(() => {
-    if (classe) {
+    if (matiere) {
       setFormData({
-        niveau: classe.niveau,
-        section: classe.section,
-        anneeScolaire: classe.anneeScolaire,
-        enseignantPrincipal: classe.enseignantPrincipal,
-        effectifMax: classe.effectifMax,
-        salle: classe.salle
+        nom: matiere.nom,
+        coefficient: matiere.coefficient,
+        type: matiere.type,
+        obligatoire: matiere.obligatoire,
+        classeIds: matiere.classeIds || []
       });
-      setSelectedMatieres(classe.matieres);
     }
-  }, [classe]);
+  }, [matiere]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.niveau) newErrors.niveau = 'Le niveau est obligatoire';
-    if (!formData.section.trim()) newErrors.section = 'La section est obligatoire';
-    if (!formData.anneeScolaire.trim()) newErrors.anneeScolaire = 'L\'année scolaire est obligatoire';
-    if (!formData.enseignantPrincipal.trim()) newErrors.enseignantPrincipal = 'L\'enseignant principal est obligatoire';
-    if (formData.effectifMax < 1 || formData.effectifMax > 50) newErrors.effectifMax = 'L\'effectif maximum doit être entre 1 et 50';
-    if (!formData.salle.trim()) newErrors.salle = 'La salle est obligatoire';
-    if (selectedMatieres.length === 0) newErrors.matieres = 'Au moins une matière doit être sélectionnée';
+    if (!formData.nom.trim()) newErrors.nom = 'Le nom de la matière est obligatoire';
+    if (formData.coefficient < 1 || formData.coefficient > 10) newErrors.coefficient = 'Le coefficient doit être entre 1 et 10';
 
-    const classes = db.getAll<Classe>('classes');
-    const existingClasse = classes.find(c => 
-      c.niveau === formData.niveau && 
-      c.section === formData.section && 
-      c.anneeScolaire === formData.anneeScolaire &&
-      c.id !== classe?.id
+    const matieres = db.getAll<Matiere>('matieres');
+    const existingMatiere = matieres.find(m => 
+      m.nom.toLowerCase() === formData.nom.toLowerCase() && 
+      m.id !== matiere?.id
     );
-    if (existingClasse) {
-      newErrors.section = 'Cette classe existe déjà pour cette année scolaire';
+    if (existingMatiere) {
+      newErrors.nom = 'Une matière avec ce nom existe déjà';
     }
 
     setErrors(newErrors);
@@ -75,26 +59,19 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
     if (!validateForm()) return;
     setIsSaving(true);
     try {
-      const now = new Date().toISOString();
-      const classeData = {
-        ...formData,
-        matieres: selectedMatieres,
-        updatedAt: now,
-        ...(classe ? {} : { createdAt: now })
-      };
-      if (classe) {
-        const updatedClasse = db.update<Classe>('classes', classe.id, classeData);
-        if (updatedClasse) {
-          showToast('Classe mise à jour avec succès', 'success');
-          onSave(updatedClasse);
+      if (matiere) {
+        const updatedMatiere = db.update<Matiere>('matieres', matiere.id, formData);
+        if (updatedMatiere) {
+          showToast('Matière mise à jour avec succès', 'success');
+          onSave(updatedMatiere);
         }
       } else {
-        const newClasse = db.create<Classe>('classes', classeData);
-        showToast('Classe ajoutée avec succès', 'success');
-        onSave(newClasse);
+        const newMatiere = db.create<Matiere>('matieres', formData);
+        showToast('Matière ajoutée avec succès', 'success');
+        onSave(newMatiere);
       }
     } catch {
-      showToast('Erreur lors de la sauvegarde de la classe', 'error');
+      showToast('Erreur lors de la sauvegarde de la matière', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -108,35 +85,16 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
     }
   };
 
-  const handleMatiereToggle = (matiere: Matiere) => {
-    setSelectedMatieres(prev => {
-      const exists = prev.find(m => m.id === matiere.id);
-      if (exists) {
-        return prev.filter(m => m.id !== matiere.id);
-      } else {
-        return [...prev, matiere];
-      }
-    });
-
-    if (errors.matieres) {
-      setErrors(prev => ({ ...prev, matieres: '' }));
-    }
-  };
-
-  const getMatieresByType = (type: string) => {
-    return matieres.filter(m => m.type === type);
-  };
-
   return (
     <div className="p-6">
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {classe ? 'Modifier la classe' : 'Nouvelle classe'}
+              {matiere ? 'Modifier la matière' : 'Nouvelle matière'}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              {classe ? 'Modifiez les informations de la classe' : 'Créez une nouvelle classe'}
+              {matiere ? 'Modifiez les informations de la matière' : 'Créez une nouvelle matière'}
             </p>
           </div>
           <button
@@ -148,181 +106,96 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Niveau <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.niveau}
-                onChange={(e) => handleInputChange('niveau', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.niveau ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-              >
-                <option value="Petite Section">Petite Section</option>
-                <option value="Moyenne Section">Moyenne Section</option>
-                <option value="Grande Section">Grande Section</option>
-                <option value="CP1">CP1</option>
-                <option value="CP2">CP2</option>
-                <option value="CE1">CE1</option>
-                <option value="CE2">CE2</option>
-                <option value="CM1">CM1</option>
-                <option value="CM2">CM2</option>
-              </select>
-              {errors.niveau && <p className="mt-1 text-xs text-red-600">{errors.niveau}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Section <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.section}
-                onChange={(e) => handleInputChange('section', e.target.value.toUpperCase())}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.section ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="A, B, C..."
-                maxLength={2}
-              />
-              {errors.section && <p className="mt-1 text-xs text-red-600">{errors.section}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Année scolaire <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.anneeScolaire}
-                onChange={(e) => handleInputChange('anneeScolaire', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.anneeScolaire ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="2024-2025"
-              />
-              {errors.anneeScolaire && <p className="mt-1 text-xs text-red-600">{errors.anneeScolaire}</p>}
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nom de la matière <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.nom}
+              onChange={(e) => handleInputChange('nom', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                errors.nom ? 'border-red-300 bg-red-50' : 'border-gray-300'
+              }`}
+              placeholder="Ex: Mathématiques, Français, Sciences..."
+            />
+            {errors.nom && <p className="mt-1 text-xs text-red-600">{errors.nom}</p>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Enseignant principal <span className="text-red-500">*</span>
+                Type de matière <span className="text-red-500">*</span>
               </label>
               <select
-                value={formData.enseignantPrincipal}
-                onChange={(e) => handleInputChange('enseignantPrincipal', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.enseignantPrincipal ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
+                value={formData.type}
+                onChange={(e) => handleInputChange('type', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               >
-                <option value="">Sélectionner un enseignant</option>
-                {enseignants.filter(e => e.statut === 'Actif').map(enseignant => (
-                  <option key={enseignant.id} value={`${enseignant.prenoms} ${enseignant.nom}`}>
-                    {enseignant.prenoms} {enseignant.nom}
-                  </option>
-                ))}
+                <option value="Fondamentale">Fondamentale</option>
+                <option value="Éveil">Éveil</option>
+                <option value="Expression">Expression</option>
               </select>
-              {errors.enseignantPrincipal && <p className="mt-1 text-xs text-red-600">{errors.enseignantPrincipal}</p>}
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.type === 'Fondamentale' && 'Matières principales (Français, Maths...)'}
+                {formData.type === 'Éveil' && 'Matières d\'éveil (Sciences, Histoire...)'}
+                {formData.type === 'Expression' && 'Matières d\'expression (Arts, Sport...)'}
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Effectif maximum <span className="text-red-500">*</span>
+                Coefficient <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
-                value={formData.effectifMax}
-                onChange={(e) => handleInputChange('effectifMax', parseInt(e.target.value))}
+                value={formData.coefficient}
+                onChange={(e) => handleInputChange('coefficient', parseInt(e.target.value))}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.effectifMax ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  errors.coefficient ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
                 min="1"
-                max="50"
+                max="10"
               />
-              {errors.effectifMax && <p className="mt-1 text-xs text-red-600">{errors.effectifMax}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Salle <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.salle}
-                onChange={(e) => handleInputChange('salle', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                  errors.salle ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="Salle 1, Salle A..."
-              />
-              {errors.salle && <p className="mt-1 text-xs text-red-600">{errors.salle}</p>}
+              {errors.coefficient && <p className="mt-1 text-xs text-red-600">{errors.coefficient}</p>}
+              <p className="mt-1 text-xs text-gray-500">
+                Poids de la matière dans le calcul de la moyenne (1-10)
+              </p>
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Matières enseignées <span className="text-red-500">*</span>
-            </h3>
-            
-            {errors.matieres && <p className="mb-4 text-sm text-red-600">{errors.matieres}</p>}
+          <div>
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={formData.obligatoire}
+                onChange={(e) => handleInputChange('obligatoire', e.target.checked)}
+                className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Matière obligatoire
+              </span>
+            </label>
+            <p className="mt-1 text-xs text-gray-500 ml-7">
+              Les matières obligatoires doivent être enseignées dans toutes les classes du niveau correspondant
+            </p>
+          </div>
 
-            <div className="space-y-6">
-              {['Fondamentale', 'Éveil', 'Expression'].map(type => (
-                <div key={type}>
-                  <h4 className="font-medium text-gray-700 mb-3">{type}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {getMatieresByType(type).map(matiere => {
-                      const isSelected = selectedMatieres.find(m => m.id === matiere.id);
-                      return (
-                        <label
-                          key={matiere.id}
-                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                            isSelected 
-                              ? 'border-teal-500 bg-teal-50' 
-                              : 'border-gray-200 hover:bg-gray-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!!isSelected}
-                            onChange={() => handleMatiereToggle(matiere)}
-                            className="sr-only"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{matiere.nom}</div>
-                            <div className="text-sm text-gray-500">
-                              Coefficient: {matiere.coefficient}
-                              {matiere.obligatoire && (
-                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
-                                  Obligatoire
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <div className="w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center">
-                              <div className="w-2 h-2 bg-white rounded-full"></div>
-                            </div>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>{selectedMatieres.length}</strong> matière(s) sélectionnée(s)
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Coefficient total: {selectedMatieres.reduce((sum, m) => sum + m.coefficient, 0)}
-              </p>
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">Coefficients recommandés</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="font-medium text-blue-800">Fondamentales</p>
+                <p className="text-blue-700">Français: 4, Maths: 4</p>
+              </div>
+              <div>
+                <p className="font-medium text-blue-800">Éveil</p>
+                <p className="text-blue-700">Sciences: 2, Histoire-Géo: 2</p>
+              </div>
+              <div>
+                <p className="font-medium text-blue-800">Expression</p>
+                <p className="text-blue-700">Arts: 1, Sport: 1</p>
+              </div>
             </div>
           </div>
 
@@ -339,7 +212,7 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50"
               disabled={isSaving}
               aria-busy={isSaving}
-              aria-label={classe ? 'Mettre à jour la classe' : 'Créer la classe'}
+              aria-label={matiere ? 'Mettre à jour la matière' : 'Créer la matière'}
             >
               {isSaving ? (
                 <svg className="animate-spin h-4 w-4 mr-2 text-white" viewBox="0 0 24 24">
@@ -349,7 +222,7 @@ export default function ClasseForm({ classe, onSave, onCancel }: ClasseFormProps
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              <span>{classe ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour') : (isSaving ? 'Sauvegarde...' : 'Créer la classe')}</span>
+              <span>{matiere ? (isSaving ? 'Sauvegarde...' : 'Mettre à jour') : (isSaving ? 'Sauvegarde...' : 'Créer la matière')}</span>
             </button>
           </div>
         </form>
